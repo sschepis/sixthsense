@@ -1,0 +1,39 @@
+{
+  "compilerOptions": {
+    /* Base Options: */
+    "target": "ES2016", // Target modern JavaScript features
+    "module": "CommonJS", // Use CommonJS modules for Node.js compatibility
+    "lib": ["ES2016", "DOM", "DOM.Iterable"], // Include standard libraries and DOM types
+    "declaration": true, // Generate corresponding '.d.ts' file
+    "declarationMap": true, // Generate sourcemaps for declarations
+    "sourceMap": true, // Generate '.map' files for debugging
+    "outDir": "./dist", // Redirect output structure to the directory
+    "rootDir": "./", // Specify the root directory of input files
+
+    /* Strict Type-Checking Options: */
+    "strict": true, // Enable all strict type-checking options
+    "noImplicitAny": true, // Raise error on expressions and declarations with an implied 'any' type
+    "strictNullChecks": true, // Enable strict null checks
+    "strictFunctionTypes": true, // Enable strict checking of function types
+    "strictBindCallApply": true, // Enable strict 'bind', 'call', and 'apply' methods on functions
+    "strictPropertyInitialization": true, // Ensure non-undefined class properties are initialized in the constructor
+    "noImplicitThis": true, // Raise error on 'this' expressions with an implied 'any' type
+    "alwaysStrict": true, // Parse in strict mode and emit "use strict" for each source file
+
+    /* Additional Checks: */
+    "noUnusedLocals": true, // Report errors on unused locals
+    "noUnusedParameters": true, // Report errors on unused parameters
+    "noImplicitReturns": true, // Report error when not all code paths in function return a value
+    "noFallthroughCasesInSwitch": true, // Report errors for fallthrough cases in switch statement
+
+    /* Module Resolution Options: */
+    "moduleResolution": "node", // Specify module resolution strategy: 'node' (Node.js) or 'classic' (TypeScript pre-1.6)
+    "baseUrl": "./", // Base directory to resolve non-absolute module names
+    "paths": {}, // Specify path mapping relative to the 'baseUrl'
+    "esModuleInterop": true, // Enables emit interoperability between CommonJS and ES Modules
+    "skipLibCheck": true, // Skip type checking of declaration files
+    "forceConsistentCasingInFileNames": true // Disallow inconsistently-cased references to the same file
+  },
+  "include": ["index.ts", "lib/**/*.ts"], // Files to include in compilation
+  "exclude": ["node_modules", "dist"] // Files/directories to exclude
+}
