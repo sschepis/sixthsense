@@ -1,6 +1,6 @@
-# Resonator Core
+# Sixth Sense
 
-[![npm version](https://badge.fury.io/js/resonator-core.svg)](https://badge.fury.io/js/resonator-core) <!-- Placeholder badge -->
+[![npm version](https://badge.fury.io/js/sixthsense.svg)](https://badge.fury.io/js/sixthsense) <!-- Placeholder badge -->
 
 A TypeScript library for generating symbolic representations based on environmental entropy, primarily derived from user interactions like mouse movements and keystrokes.
 
@@ -17,9 +17,9 @@ The library also provides a `SymbolicEventBus` for emitting events related to en
 ## Installation
 
 ```bash
-npm install resonator-core
+npm install @sschepis/sixthsense
 # or
-yarn add resonator-core
+yarn add @sschepis/sixthsense
 ```
 
 ## Basic Usage
