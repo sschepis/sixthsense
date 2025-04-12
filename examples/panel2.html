@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resonator Core Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        @keyframes flicker {
+            0%, 19.999%, 22%, 62.999%, 64%, 64.999%, 70%, 100% { opacity: 1; }
+            20%, 21.999%, 63%, 63.999%, 65%, 69.999% { opacity: 0.4; }
+        }
+        @keyframes scanline {
+            0% { background-position: 0 -100vh; }
+            100% { background-position: 0 100vh; }
+        }
+        @keyframes colorShift {
+            0% { filter: hue-rotate(0deg); }
+            100% { filter: hue-rotate(360deg); }
+        }
+        @keyframes innerPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+        }
+        .pulse { animation: pulse 2s infinite; }
+        .float { animation: float 3s ease-in-out infinite; }
+        .flicker { animation: flicker 3s linear infinite; }
+        .color-shift { animation: colorShift 15s linear infinite; }
+        .inner-pulse { animation: innerPulse 2s ease-in-out infinite; }
+        .glow {
+            text-shadow: 0 0 8px rgba(132, 204, 255, 0.8);
+        }
+        .hexagram-symbol {
+            font-family: 'Times New Roman', serif;
+            font-weight: bold;
+        }
+        .gauge {
+            --value: 0;
+            background: conic-gradient(
+                #4fd1c5 0%,
+                #4fd1c5 calc(var(--value) * 100%),
+                #2d3748 calc(var(--value) * 100%),
+                #2d3748 100%
+            );
+        }
+        .entropy-hash {
+            font-family: monospace;
+            letter-spacing: 1px;
+        }
+        .cyber-border {
+            position: relative;
+            overflow: hidden;
+        }
+        .cyber-border::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border: 2px solid transparent;
+            background: linear-gradient(90deg, #4fd1c5, #9f7aea, #4fd1c5) border-box;
+            -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: destination-out;
+            mask-composite: exclude;
+            border-radius: inherit;
+        }
+        .cyber-bg {
+            background: linear-gradient(135deg, rgba(31, 41, 55, 0.8), rgba(17, 24, 39, 0.9));
+        }
+        .scanlines {
+            position: relative;
+        }
+        .scanlines::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                to bottom,
+                transparent 0%,
+                rgba(255, 255, 255, 0.05) 50%,
+                transparent 100%
+            );
+            background-size: 100% 8px;
+            pointer-events: none;
+            animation: scanline 6s linear infinite;
+        }
+        .symbol-container {
+            perspective: 1000px;
+        }
+        .symbol-flip {
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .symbol-flip:hover {
+            transform: rotateY(180deg);
+        }
+        .symbol-front, .symbol-back {
+            backface-visibility: hidden;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .symbol-back {
+            transform: rotateY(180deg);
+        }
+        .particle {
+            position: absolute;
+            background: rgba(159, 122, 234, 0.6);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        .metric-card {
+            transition: all 0.3s ease;
+        }
+        .metric-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        .stat-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+        }
+        .resonance-orb {
+            position: relative;
+            transition: all 0.5s ease;
+            box-shadow: 0 0 20px rgba(79, 209, 197, 0.3);
+        }
+        .orb-halo {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(10px);
+            opacity: 0.7;
+            transition: all 0.5s ease;
+        }
+        .orb-symbol {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 4rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .orb-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            overflow: hidden;
+        }
+        .orb-inner::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 70%);
+            opacity: 0.1;
+            transform: rotate(45deg);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen font-mono overflow-x-hidden">
+    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+        <div id="particles"></div>
+    </div>
+    
+    <div class="container mx-auto px-4 py-8 relative">
+        <header class="mb-8 text-center relative">
+            <div class="absolute -inset-4 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl opacity-20 blur-3xl"></div>
+            <h1 class="text-5xl font-bold mb-2 glow relative">
+                <i class="fas fa-atom mr-2 float flicker"></i>RESONATOR CORE
+            </h1>
+            <p class="text-gray-400 text-lg">Quantum Entanglement Visualization Matrix</p>
+            <div class="mt-4 h-1 bg-gradient-to-r from-transparent via-purple-500 to-transparent opacity-30"></div>
+        </header>
+
+        <!-- Resonance Orb Section -->
+        <div class="flex justify-center mb-8">
+            <div class="relative w-64 h-64">
+                <!-- Resonance Orb -->
+                <div id="resonanceOrb" class="resonance-orb w-full h-full rounded-full bg-gradient-to-br from-blue-400 to-purple-600 flex items-center justify-center">
+                    <div class="orb-inner"></div>
+                    <div id="orbHalo" class="orb-halo bg-blue-400 w-full h-full"></div>
+                    <div id="orbSymbol" class="orb-symbol hexagram-symbol text-yellow-300"></div>
+                </div>
+                <div class="absolute -inset-4 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full opacity-10 blur-xl"></div>
+            </div>
+        </div>
+
+        <!-- Aggregate Metrics Panel -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div class="cyber-border cyber-bg rounded-xl p-4 shadow-lg metric-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-400 mb-1">TOTAL INTERACTIONS</p>
+                        <h3 class="text-2xl font-bold" id="totalInteractions">0</h3>
+                        <div class="flex items-center mt-1">
+                            <span class="text-xs text-green-400 mr-1"><i class="fas fa-arrow-up"></i> 12%</span>
+                            <span class="text-xs text-gray-400">vs last cycle</span>
+                        </div>
+                    </div>
+                    <div class="bg-purple-500/10 p-3 rounded-full">
+                        <i class="fas fa-mouse-pointer text-purple-400 text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-3 pt-2 border-t border-gray-700">
+                    <div class="flex justify-between text-xs text-gray-400">
+                        <span>Keyboard</span>
+                        <span id="keyboardTotal">0</span>
+                    </div>
+                    <div class="flex justify-between text-xs text-gray-400 mt-1">
+                        <span>Mouse</span>
+                        <span id="mouseTotal">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cyber-border cyber-bg rounded-xl p-4 shadow-lg metric-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-400 mb-1">AVG ATTENTION</p>
+                        <h3 class="text-2xl font-bold" id="avgAttention">0.00</h3>
+                        <div class="flex items-center mt-1">
+                            <span class="stat-badge" id="attentionStatusBadge">INACTIVE</span>
+                        </div>
+                    </div>
+                    <div class="bg-blue-500/10 p-3 rounded-full">
+                        <i class="fas fa-brain text-blue-400 text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-3 pt-2 border-t border-gray-700">
+                    <div class="flex justify-between text-xs text-gray-400">
+                        <span>Peak</span>
+                        <span id="peakAttention">0.00</span>
+                    </div>
+                    <div class="flex justify-between text-xs text-gray-400 mt-1">
+                        <span>Threshold</span>
+                        <span id="attentionThreshold">0.65</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cyber-border cyber-bg rounded-xl p-4 shadow-lg metric-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-400 mb-1">SYMBOL COLLAPSES</p>
+                        <h3 class="text-2xl font-bold" id="totalCollapses">0</h3>
+                        <div class="flex items-center mt-1">
+                            <span class="text-xs text-purple-400"><i class="fas fa-history mr-1"></i> <span id="lastCollapseTime">Never</span></span>
+                        </div>
+                    </div>
+                    <div class="bg-pink-500/10 p-3 rounded-full">
+                        <i class="fas fa-magic text-pink-400 text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-3 pt-2 border-t border-gray-700">
+                    <div class="flex justify-between text-xs text-gray-400">
+                        <span>Resonance</span>
+                        <span id="avgResonance">0.00</span>
+                    </div>
+                    <div class="flex justify-between text-xs text-gray-400 mt-1">
+                        <span>Deviation</span>
+                        <span id="avgDeviation">0.00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <!-- Input Entropy Section -->
+            <div class="cyber-border cyber-bg rounded-xl p-6 shadow-2xl border border-gray-700 relative overflow-hidden">
+                <div class="absolute -inset-1 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl opacity-10 blur-xl"></div>
+                <h2 class="text-xl font-semibold mb-4 flex items-center">
+                    <i class="fas fa-random mr-2 text-purple-400"></i> INPUT ENTROPY
+                </h2>
+                
+                <div class="mb-6">
+                    <h3 class="text-sm font-medium text-gray-400 mb-1">DELTA WAVEFORM</h3>
+                    <div class="bg-gray-900 rounded-lg p-2 h-40 scanlines relative">
+                        <canvas id="deltaChart"></canvas>
+                        <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-purple-500 to-transparent"></div>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1 flex justify-between">
+                        <span>EDM BASELINE</span>
+                        <span id="currentDelta" class="text-purple-300">CURRENT: 0ms</span>
+                    </div>
+                </div>
+                
+                <div class="mb-6">
+                    <h3 class="text-sm font-medium text-gray-400 mb-2">ACTIVITY MATRIX</h3>
+                    <div class="flex space-x-4">
+                        <div class="flex-1">
+                            <div class="flex items-center mb-1">
+                                <div id="keyboardActivity" class="w-3 h-3 rounded-full bg-blue-400 mr-2 pulse"></div>
+                                <span class="text-xs">KEYBOARD</span>
+                            </div>
+                            <div class="h-2 bg-gray-700 rounded-full overflow-hidden">
+                                <div id="keyboardBar" class="h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex items-center mb-1">
+                                <div id="mouseActivity" class="w-3 h-3 rounded-full bg-green-400 mr-2"></div>
+                                <span class="text-xs">MOUSE</span>
+                            </div>
+                            <div class="h-2 bg-gray-700 rounded-full overflow-hidden">
+                                <div id="mouseBar" class="h-full bg-gradient-to-r from-green-400 to-green-600 rounded-full" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="text-sm font-medium text-gray-400 mb-1">ENTROPY SIGNATURE</h3>
+                    <div class="bg-gray-900 rounded-lg p-3 entropy-hash text-sm overflow-x-auto scanlines">
+                        <span id="entropyHash" class="text-purple-300">0x0000000000000000</span>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1">SHA-256 HASH OF INTERACTION DELTAS</div>
+                </div>
+            </div>
+            
+            <!-- Attention State Section -->
+            <div class="cyber-border cyber-bg rounded-xl p-6 shadow-2xl border border-gray-700 relative overflow-hidden">
+                <div class="absolute -inset-1 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl opacity-10 blur-xl"></div>
+                <h2 class="text-xl font-semibold mb-4 flex items-center">
+                    <i class="fas fa-brain mr-2 text-blue-400"></i> ATTENTION STATE
+                </h2>
+                
+                <div class="flex flex-col items-center mb-6">
+                    <h3 class="text-sm font-medium text-gray-400 mb-2">NEURAL COHERENCE</h3>
+                    <div class="relative">
+                        <div class="gauge w-40 h-40 rounded-full flex items-center justify-center mb-2 relative">
+                            <div class="absolute inset-4 bg-gray-900 rounded-full"></div>
+                            <div class="relative z-10 text-3xl font-bold" id="attentionLevel">0.00</div>
+                            <div class="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-400 border-r-blue-400 opacity-30" style="transform: rotate(calc(var(--value) * 360deg))"></div>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="text-xs text-gray-400 mr-2">0.0</span>
+                            <div class="flex-1 h-1 bg-gradient-to-r from-gray-700 via-blue-400 to-purple-500 rounded-full"></div>
+                            <span class="text-xs text-gray-400 ml-2">1.0</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-6">
+                    <h3 class="text-sm font-medium text-gray-400 mb-2">COHERENCE STATE</h3>
+                    <div id="coherenceIndicator" class="flex items-center justify-center p-3 rounded-lg bg-gray-900 border border-gray-700">
+                        <div class="w-4 h-4 rounded-full bg-gray-600 mr-2"></div>
+                        <span class="text-sm">INCOHERENT</span>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1">THRESHOLD: <span id="coherenceThreshold" class="text-blue-300">0.65</span></div>
+                </div>
+                
+                <div>
+                    <h3 class="text-sm font-medium text-gray-400 mb-1">ATTENTION HISTORY</h3>
+                    <div class="bg-gray-900 rounded-lg p-2 h-40 scanlines">
+                        <canvas id="attentionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Symbolic Collapse Section -->
+            <div class="cyber-border cyber-bg rounded-xl p-6 shadow-2xl border border-gray-700 relative overflow-hidden">
+                <div class="absolute -inset-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl opacity-10 blur-xl"></div>
+                <h2 class="text-xl font-semibold mb-4 flex items-center">
+                    <i class="fas fa-magic mr-2 text-purple-400"></i> SYMBOLIC COLLAPSE
+                </h2>
+                
+                <div class="flex flex-col items-center mb-6 symbol-container">
+                    <h3 class="text-sm font-medium text-gray-400 mb-2">PRIMARY ARCHETYPE</h3>
+                    <div class="relative w-32 h-32 mb-4">
+                        <div class="symbol-flip w-full h-full">
+                            <div class="symbol-front flex items-center justify-center text-6xl font-bold hexagram-symbol text-yellow-300 bg-gray-900 rounded-full border-2 border-purple-400">
+                                ☰
+                            </div>
+                            <div class="symbol-back flex items-center justify-center text-6xl font-bold hexagram-symbol text-yellow-300 bg-gray-900 rounded-full border-2 border-blue-400">
+                                ☷
+                            </div>
+                        </div>
+                    </div>
+                    <div id="hexagramName" class="text-lg font-medium">THE CREATIVE</div>
+                    <div id="hexagramNumber" class="text-sm text-gray-400">HEXAGRAM 1</div>
+                </div>
+                
+                <div class="grid grid-cols-3 gap-2 mb-6">
+                    <div class="bg-gray-900 rounded p-2 text-center border border-gray-700 hover:border-purple-400 transition-colors">
+                        <div class="text-xs text-gray-400 mb-1">TAROT</div>
+                        <div id="tarotCard" class="text-sm font-medium">THE MAGICIAN</div>
+                    </div>
+                    <div class="bg-gray-900 rounded p-2 text-center border border-gray-700 hover:border-blue-400 transition-colors">
+                        <div class="text-xs text-gray-400 mb-1">RUNE</div>
+                        <div id="runeSymbol" class="text-sm font-medium">FEHU</div>
+                    </div>
+                    <div class="bg-gray-900 rounded p-2 text-center border border-gray-700 hover:border-green-400 transition-colors">
+                        <div class="text-xs text-gray-400 mb-1">HEBREW</div>
+                        <div id="hebrewLetter" class="text-sm font-medium">ALEPH</div>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <h3 class="text-sm font-medium text-gray-400 mb-2">RESONANCE METRICS</h3>
+                    <div class="space-y-2">
+                        <div>
+                            <div class="flex justify-between text-xs text-gray-400 mb-1">
+                                <span>SCORE</span>
+                                <span id="resonanceScoreValue" class="text-green-400">0.00</span>
+                            </div>
+                            <div class="h-2 bg-gray-700 rounded-full overflow-hidden">
+                                <div id="resonanceScoreBar" class="h-full bg-gradient-to-r from-green-400 to-green-600 rounded-full" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs text-gray-400 mb-1">
+                                <span>DEVIATION</span>
+                                <span id="resonanceDeviationValue" class="text-red-400">0.00</span>
+                            </div>
+                            <div class="h-2 bg-gray-700 rounded-full overflow-hidden">
+                                <div id="resonanceDeviationBar" class="h-full bg-gradient-to-r from-red-400 to-red-600 rounded-full" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="text-sm font-medium text-gray-400 mb-2">COLLAPSE LOG</h3>
+                    <div id="collapseHistory" class="bg-gray-900 rounded-lg p-2 max-h-32 overflow-y-auto text-sm space-y-1 border border-gray-700 scanlines">
+                        <div class="text-gray-500 italic">NO COLLAPSES DETECTED...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center text-xs text-gray-600 mt-8">
+            <p>RESONATOR CORE v2.3.7 | QUANTUM ENTANGLEMENT INTERFACE</p>
+        </div>
+    </div>
+
+    <script type="module">
+        // --- Library Integration ---
+        import { tickResonator, ResonatorBus } from '../dist/index.js';
+
+        // --- DOM Element References ---
+        // Orb
+        const resonanceOrbEl = document.getElementById('resonanceOrb');
+        const orbHaloEl = document.getElementById('orbHalo');
+        const orbSymbolEl = document.getElementById('orbSymbol');
+        // Aggregate Metrics
+        const totalInteractionsEl = document.getElementById('totalInteractions');
+        const keyboardTotalEl = document.getElementById('keyboardTotal');
+        const mouseTotalEl = document.getElementById('mouseTotal');
+        const avgAttentionEl = document.getElementById('avgAttention');
+        const attentionStatusBadgeEl = document.getElementById('attentionStatusBadge');
+        const peakAttentionEl = document.getElementById('peakAttention');
+        const attentionThresholdEl = document.getElementById('attentionThreshold'); // Display only
+        const totalCollapsesEl = document.getElementById('totalCollapses');
+        const lastCollapseTimeEl = document.getElementById('lastCollapseTime');
+        const avgResonanceEl = document.getElementById('avgResonance');
+        const avgDeviationEl = document.getElementById('avgDeviation');
+        // Entropy Section
+        const deltaChartEl = document.getElementById('deltaChart');
+        const currentDeltaEl = document.getElementById('currentDelta');
+        const keyboardActivityEl = document.getElementById('keyboardActivity');
+        const keyboardBarEl = document.getElementById('keyboardBar');
+        const mouseActivityEl = document.getElementById('mouseActivity');
+        const mouseBarEl = document.getElementById('mouseBar');
+        const entropyHashEl = document.getElementById('entropyHash');
+        // Attention Section
+        const attentionLevelEl = document.getElementById('attentionLevel');
+        const gaugeEl = document.querySelector('.gauge');
+        const coherenceIndicatorEl = document.getElementById('coherenceIndicator');
+        const coherenceThresholdDisplayEl = document.getElementById('coherenceThreshold'); // Display only
+        const attentionChartEl = document.getElementById('attentionChart');
+        // Collapse Section
+        const hexagramSymbolFrontEl = document.querySelector('.symbol-front');
+        const hexagramSymbolBackEl = document.querySelector('.symbol-back');
+        const hexagramNameEl = document.getElementById('hexagramName');
+        const hexagramNumberEl = document.getElementById('hexagramNumber');
+        const tarotCardEl = document.getElementById('tarotCard');
+        const runeSymbolEl = document.getElementById('runeSymbol');
+        const hebrewLetterEl = document.getElementById('hebrewLetter');
+        const resonanceScoreValueEl = document.getElementById('resonanceScoreValue');
+        const resonanceScoreBarEl = document.getElementById('resonanceScoreBar');
+        const resonanceDeviationValueEl = document.getElementById('resonanceDeviationValue');
+        const resonanceDeviationBarEl = document.getElementById('resonanceDeviationBar');
+        const collapseHistoryEl = document.getElementById('collapseHistory');
+        // Effects
+        const particlesContainer = document.getElementById('particles');
+
+        // --- State Variables ---
+        let interactionCount = 0;
+        let keyboardCount = 0;
+        let mouseCount = 0;
+        let collapseCount = 0;
+        let attentionSum = 0;
+        let resonanceSum = 0;
+        let deviationSum = 0;
+        let peakAttention = 0;
+        let lastAttentionLevel = 0;
+        const attentionHistory = Array(30).fill(0);
+        const deltaHistory = Array(20).fill(0);
+        const MAX_HISTORY_ITEMS = 10; // For collapse log
+        const ATTENTION_THRESHOLD = 0.25; // From edm.ts - used for display/logic
+
+        // --- Chart Initialization ---
+        Chart.defaults.color = '#9CA3AF';
+        Chart.defaults.borderColor = 'rgba(75, 85, 99, 0.5)';
+
+        const deltaChartCtx = deltaChartEl.getContext('2d');
+        const deltaChart = new Chart(deltaChartCtx, {
+             type: 'line',
+             data: {
+                 labels: Array(deltaHistory.length).fill(''),
+                 datasets: [
+                     {
+                         label: 'Delta', data: deltaHistory, borderColor: '#9f7aea',
+                         backgroundColor: 'rgba(159, 122, 234, 0.1)', borderWidth: 2, tension: 0.3, fill: true
+                     },
+                     { // Assuming baseline is 45 from edm.ts
+                         label: 'EDM Baseline', data: Array(deltaHistory.length).fill(45), borderColor: '#4a5568',
+                         borderWidth: 1, borderDash: [5, 5], pointRadius: 0
+                     }
+                 ]
+             },
+             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                 scales: { y: { min: 0, max: 150, grid: { color: 'rgba(74, 85, 104, 0.3)' }, ticks: { font: { family: 'monospace', size: 10 } } },
+                           x: { display: false, grid: { color: 'rgba(74, 85, 104, 0.3)' } } } }
+        });
+
+        const attentionChartCtx = attentionChartEl.getContext('2d');
+        const attentionChart = new Chart(attentionChartCtx, {
+            type: 'line',
+            data: {
+                labels: Array(attentionHistory.length).fill(''),
+                datasets: [{
+                    label: 'Attention', data: attentionHistory, borderColor: '#4299e1',
+                    backgroundColor: 'rgba(66, 153, 225, 0.1)', borderWidth: 2, tension: 0.2, fill: true
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                scales: { y: { min: 0, max: 1, grid: { color: 'rgba(74, 85, 104, 0.3)' }, ticks: { font: { family: 'monospace', size: 10 } } },
+                          x: { display: false, grid: { color: 'rgba(74, 85, 104, 0.3)' } } } }
+        });
+
+        // --- Helper Functions ---
+        function updateChart(chart, newData) {
+            chart.data.datasets[0].data.push(newData);
+            chart.data.datasets[0].data.shift();
+            if (chart.data.datasets[1]) { // Handle baseline chart
+                 chart.data.datasets[1].data.push(chart.data.datasets[1].data[0]); // Keep baseline constant
+                 chart.data.datasets[1].data.shift();
+            }
+            chart.update('none'); // Use 'none' for smoother animation
+        }
+
+        function formatTime(timestamp) {
+            return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+
+        function addToHistory(element, text, symbol = null) {
+            if (!element) return;
+            if (element.children.length >= MAX_HISTORY_ITEMS && element.firstElementChild?.classList.contains('text-gray-500')) {
+                 element.innerHTML = ''; // Clear initial message
+            } else if (element.children.length >= MAX_HISTORY_ITEMS) {
+                 element.removeChild(element.firstElementChild); // Remove oldest
+            }
+            const div = document.createElement('div');
+            div.className = 'flex justify-between items-center text-xs p-1 rounded bg-gray-800/50 hover:bg-gray-700/50 transition-colors';
+            const timeSpan = document.createElement('span');
+            timeSpan.className = 'text-gray-500 mr-2';
+            timeSpan.textContent = formatTime(Date.now());
+            const textSpan = document.createElement('span');
+            textSpan.className = 'flex-grow';
+            textSpan.textContent = text;
+
+            div.appendChild(timeSpan);
+            if (symbol) {
+                const symbolSpan = document.createElement('span');
+                symbolSpan.className = 'ml-2 text-lg hexagram-symbol text-yellow-300';
+                symbolSpan.textContent = symbol;
+                div.appendChild(symbolSpan);
+            }
+             div.appendChild(textSpan); // Add text last
+            element.appendChild(div);
+            element.scrollTop = element.scrollHeight; // Scroll to bottom
+        }
+
+        // --- Event Handlers ---
+        ResonatorBus.on('resonator:entropy', {
+            handler: (event) => {
+                interactionCount++;
+                if (event.contextHash?.startsWith('keydown')) keyboardCount++;
+                if (event.contextHash?.startsWith('mousemove')) mouseCount++;
+
+                if (totalInteractionsEl) totalInteractionsEl.textContent = interactionCount;
+                if (keyboardTotalEl) keyboardTotalEl.textContent = keyboardCount;
+                if (mouseTotalEl) mouseTotalEl.textContent = mouseCount;
+
+                updateChart(deltaChart, event.delta);
+                if (currentDeltaEl) currentDeltaEl.textContent = `CURRENT: ${event.delta.toFixed(1)}ms`;
+                if (entropyHashEl) entropyHashEl.textContent = `0x${event.entropyBits}`;
+
+                // Activity indicators
+                if (event.contextHash?.startsWith('keydown') && keyboardActivityEl) {
+                    keyboardActivityEl.classList.add('pulse');
+                    setTimeout(() => keyboardActivityEl.classList.remove('pulse'), 1000);
+                    if(keyboardBarEl) keyboardBarEl.style.width = `${Math.min(100, (keyboardCount / (interactionCount || 1)) * 100)}%`;
+                }
+                 if (event.contextHash?.startsWith('mousemove') && mouseActivityEl) {
+                    mouseActivityEl.classList.add('pulse');
+                    setTimeout(() => mouseActivityEl.classList.remove('pulse'), 1000);
+                     if(mouseBarEl) mouseBarEl.style.width = `${Math.min(100, (mouseCount / (interactionCount || 1)) * 100)}%`;
+                }
+            }
+        });
+
+        ResonatorBus.on('resonator:attention', {
+            handler: (event) => {
+                attentionSum += event.level;
+                const avgAtt = interactionCount > 0 ? (attentionSum / interactionCount) : 0;
+                peakAttention = Math.max(peakAttention, event.level);
+                lastAttentionLevel = event.level;
+
+                if (avgAttentionEl) avgAttentionEl.textContent = avgAtt.toFixed(2);
+                if (peakAttentionEl) peakAttentionEl.textContent = peakAttention.toFixed(2);
+                if (attentionLevelEl) attentionLevelEl.textContent = event.level.toFixed(2);
+                if (gaugeEl) gaugeEl.style.setProperty('--value', event.level);
+
+                // Update Coherence Indicator
+                if (coherenceIndicatorEl) {
+                    const indicatorDot = coherenceIndicatorEl.querySelector('div');
+                    const indicatorText = coherenceIndicatorEl.querySelector('span');
+                    if (event.coherent) {
+                        indicatorDot.className = 'w-4 h-4 rounded-full bg-green-400 mr-2 pulse';
+                        indicatorText.textContent = 'COHERENT';
+                        coherenceIndicatorEl.classList.remove('border-gray-700');
+                        coherenceIndicatorEl.classList.add('border-green-400');
+                    } else {
+                        indicatorDot.className = 'w-4 h-4 rounded-full bg-gray-600 mr-2';
+                        indicatorText.textContent = 'INCOHERENT';
+                        coherenceIndicatorEl.classList.remove('border-green-400');
+                        coherenceIndicatorEl.classList.add('border-gray-700');
+                    }
+                }
+                 // Update Status Badge
+                 if (attentionStatusBadgeEl) {
+                     if (event.level > 0.8) {
+                         attentionStatusBadgeEl.textContent = 'FOCUSED';
+                         attentionStatusBadgeEl.className = 'stat-badge bg-green-500 text-green-100';
+                     } else if (event.level > 0.5) {
+                         attentionStatusBadgeEl.textContent = 'ATTENTIVE';
+                         attentionStatusBadgeEl.className = 'stat-badge bg-blue-500 text-blue-100';
+                     } else if (event.level > 0.2) {
+                         attentionStatusBadgeEl.textContent = 'DISTRACTED';
+                         attentionStatusBadgeEl.className = 'stat-badge bg-yellow-500 text-yellow-100';
+                     } else {
+                         attentionStatusBadgeEl.textContent = 'IDLE';
+                         attentionStatusBadgeEl.className = 'stat-badge bg-gray-500 text-gray-100';
+                     }
+                 }
+
+                updateChart(attentionChart, event.level);
+
+                // --- Orb Animation ---
+                if (resonanceOrbEl && orbHaloEl) {
+                    // Scale orb slightly based on attention
+                    const orbScale = 1 + event.level * 0.1;
+                    resonanceOrbEl.style.transform = `scale(${orbScale})`;
+
+                    // Adjust halo size and opacity based on attention
+                    const haloScale = 1 + event.level * 0.5;
+                    orbHaloEl.style.transform = `scale(${haloScale})`;
+                    orbHaloEl.style.opacity = 0.3 + event.level * 0.4;
+
+                    // Change halo color based on coherence
+                    orbHaloEl.style.backgroundColor = event.coherent ? '#4fd1c5' : '#4299e1'; // Teal for coherent, blue otherwise
+
+                    // Add/remove pulse animation based on coherence
+                    if (event.coherent) {
+                        resonanceOrbEl.classList.add('inner-pulse');
+                    } else {
+                        resonanceOrbEl.classList.remove('inner-pulse');
+                    }
+                }
+            }
+        });
+
+        ResonatorBus.on('resonator:collapse', {
+            handler: (event) => {
+                collapseCount++;
+                resonanceSum += event.resonance.score;
+                deviationSum += event.resonance.deviation;
+
+                const avgRes = collapseCount > 0 ? (resonanceSum / collapseCount) : 0;
+                const avgDev = collapseCount > 0 ? (deviationSum / collapseCount) : 0;
+
+                if (totalCollapsesEl) totalCollapsesEl.textContent = collapseCount;
+                if (lastCollapseTimeEl) lastCollapseTimeEl.textContent = formatTime(event.timestamp);
+                if (avgResonanceEl) avgResonanceEl.textContent = avgRes.toFixed(3);
+                if (avgDeviationEl) avgDeviationEl.textContent = avgDev.toFixed(3);
+
+                // Update Symbol Display (Panel)
+                const frontSymbolEl = document.querySelector('.symbol-front');
+                const backSymbolEl = document.querySelector('.symbol-back');
+                if (frontSymbolEl) frontSymbolEl.textContent = event.symbol.code;
+                if (backSymbolEl) backSymbolEl.textContent = event.symbol.code; // Update back too
+                if (hexagramNameEl) hexagramNameEl.textContent = `SYMBOL ${event.symbol.index}`; // Placeholder name
+                if (hexagramNumberEl) hexagramNumberEl.textContent = `INDEX ${event.symbol.index}`;
+
+                // Update Overlays
+                if (tarotCardEl) tarotCardEl.textContent = event.symbol.overlay[0]?.name || '-';
+                if (runeSymbolEl) runeSymbolEl.textContent = event.symbol.overlay[1]?.name || '-';
+                if (hebrewLetterEl) hebrewLetterEl.textContent = event.symbol.overlay[2]?.name || '-';
+
+                // Update Resonance Bars
+                const scorePercent = Math.min(100, Math.max(0, event.resonance.score * 500)); // Scale score
+                const deviationPercent = Math.min(100, Math.max(0, Math.abs(event.resonance.deviation) * 500)); // Scale deviation magnitude
+
+                if (resonanceScoreValueEl) resonanceScoreValueEl.textContent = event.resonance.score.toFixed(3);
+                if (resonanceScoreBarEl) resonanceScoreBarEl.style.width = `${scorePercent}%`;
+                if (resonanceDeviationValueEl) resonanceDeviationValueEl.textContent = event.resonance.deviation.toFixed(3);
+                if (resonanceDeviationBarEl) resonanceDeviationBarEl.style.width = `${deviationPercent}%`;
+
+                // Add to History Log
+                if (collapseHistoryEl) {
+                    addToHistory(collapseHistoryEl, `Index ${event.symbol.index}, Score: ${event.resonance.score.toFixed(3)}`, event.symbol.code);
+                }
+
+                // --- Orb Symbol Update ---
+                if (orbSymbolEl && resonanceOrbEl) {
+                    orbSymbolEl.textContent = event.symbol.code;
+                    orbSymbolEl.style.opacity = 1; // Show symbol
+
+                    // Flash effect on orb
+                    resonanceOrbEl.style.transition = 'all 0.1s ease'; // Faster transition for flash
+                    resonanceOrbEl.style.boxShadow = `0 0 40px rgba(255, 255, 100, 0.8)`; // Yellow flash
+                    resonanceOrbEl.style.transform = `scale(1.15)`; // Pulse bigger
+
+                    setTimeout(() => {
+                        orbSymbolEl.style.opacity = 0; // Hide symbol after delay
+                        // Restore normal orb style
+                        resonanceOrbEl.style.transition = 'all 0.5s ease';
+                        resonanceOrbEl.style.boxShadow = `0 0 20px rgba(79, 209, 197, 0.3)`; // Restore original shadow
+                        // Restore scale based on current attention
+                        const currentAttention = lastAttentionLevel; // Use the last known attention level
+                        const orbScale = 1 + currentAttention * 0.1;
+                        resonanceOrbEl.style.transform = `scale(${orbScale})`;
+                    }, 1000); // Hide symbol and restore orb after 1 second
+                }
+            }
+        });
+
+        // --- Particle Effect (Optional Fun) ---
+        function createParticle(x, y) {
+            if (!particlesContainer) return;
+            const particle = document.createElement('div');
+            particle.classList.add('particle');
+            const size = Math.random() * 5 + 2; // 2px to 7px
+            particle.style.width = `${size}px`;
+            particle.style.height = `${size}px`;
+            particle.style.left = `${x}px`;
+            particle.style.top = `${y}px`;
+
+            const angle = Math.random() * Math.PI * 2;
+            const velocity = Math.random() * 2 + 1;
+            const dx = Math.cos(angle) * velocity;
+            const dy = Math.sin(angle) * velocity;
+            const life = Math.random() * 500 + 500; // 0.5s to 1s
+
+            particlesContainer.appendChild(particle);
+
+            let startTime = performance.now();
+            function animateParticle() {
+                const elapsed = performance.now() - startTime;
+                if (elapsed > life) {
+                    particle.remove();
+                    return;
+                }
+                const progress = elapsed / life;
+                particle.style.transform = `translate(${dx * elapsed / 20}px, ${dy * elapsed / 20}px)`;
+                particle.style.opacity = 1 - progress;
+                requestAnimationFrame(animateParticle);
+            }
+            animateParticle();
+        }
+
+        document.addEventListener('mousemove', (e) => {
+            if (Math.random() < 0.1) {
+                 createParticle(e.clientX, e.clientY);
+            }
+        });
+
+        // --- Start Ticker ---
+        console.log('Starting Resonator Core...');
+        setInterval(() => {
+            try {
+                tickResonator();
+            } catch (error) {
+                console.error("Error during tick:", error);
+            }
+        }, 500); // Tick every 500ms
+
+        // Initial tick
+        try {
+             tickResonator();
+        } catch (error) {
+             console.error("Error during initial tick:", error);
+        }
+
+        // Set initial thresholds display
+        if (attentionThresholdEl) attentionThresholdEl.textContent = ATTENTION_THRESHOLD.toFixed(2);
+        if (coherenceThresholdDisplayEl) coherenceThresholdDisplayEl.textContent = ATTENTION_THRESHOLD.toFixed(2);
+// Leftover simulation code removed.
+    </script>
+</body>
+</html>

@@ -1,8 +1,8 @@
-import { generateEntropySnapshot } from "./lib/entropy";
-import { computeEDM } from "./lib/edm";
-import { evolveWavefunction } from "./lib/wavefunction";
-import { collapseHQE } from "./lib/encoder";
-import { SymbolicEventBus } from "./lib/bus";
+import { generateEntropySnapshot } from "./lib/entropy.js";
+import { computeEDM } from "./lib/edm.js";
+import { evolveWavefunction } from "./lib/wavefunction.js";
+import { collapseHQE } from "./lib/encoder.js";
+import { SymbolicEventBus } from "./lib/bus.js";
 
 const bus = new SymbolicEventBus();
 

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resonator Core Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Resonator Core Dashboard</h1>
+
+    <div class="container">
+        <div class="section">
+            <h2>Entropy</h2>
+            <p><strong>Timestamp:</strong> <span id="entropy-timestamp">-</span></p>
+            <p><strong>Bits:</strong> <span id="entropy-bits">-</span></p>
+            <p><strong>Delta:</strong> <span id="entropy-delta">-</span></p>
+            <p><strong>Context:</strong> <span id="entropy-context">-</span></p>
+        </div>
+
+        <div class="section">
+            <h2>Attention (EDM)</h2>
+            <p><strong>Level:</strong> <span id="attention-level">-</span></p>
+            <div class="progress-bar-container">
+                <div id="attention-progress" class="progress-bar"></div>
+            </div>
+            <p><strong>Deviation:</strong> <span id="attention-deviation">-</span></p>
+            <p><strong>Coherent:</strong> <span id="attention-coherent">-</span></p>
+        </div>
+
+        <div class="section">
+            <h2>Collapse (HQE)</h2>
+            <p><strong>Timestamp:</strong> <span id="collapse-timestamp">-</span></p>
+            <div class="symbol-display">
+                <span id="collapse-symbol" class="symbol-code">-</span>
+                <span id="collapse-symbol-type">(type)</span>
+            </div>
+            <p><strong>Index:</strong> <span id="collapse-index">-</span></p>
+            <p><strong>Resonance Score:</strong> <span id="resonance-score">-</span></p>
+            <p><strong>Resonance Deviation:</strong> <span id="resonance-deviation">-</span></p>
+            <h3>Overlays:</h3>
+            <ul id="collapse-overlays">
+                <li>-</li>
+            </ul>
+        </div>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>

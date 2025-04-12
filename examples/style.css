@@ -1,0 +1,83 @@
+body {
+    font-family: sans-serif;
+    line-height: 1.6;
+    margin: 20px;
+    background-color: #f4f4f4;
+    color: #333;
+}
+
+h1, h2, h3 {
+    color: #2c3e50;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.section {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.section h2 {
+    margin-top: 0;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+span {
+    font-weight: bold;
+    color: #3498db;
+    word-wrap: break-word; /* Prevent long strings like entropy bits from overflowing */
+}
+
+.progress-bar-container {
+    width: 100%;
+    background-color: #e0e0e0;
+    border-radius: 4px;
+    height: 20px;
+    margin: 10px 0;
+    overflow: hidden; /* Ensure inner bar stays contained */
+}
+
+.progress-bar {
+    height: 100%;
+    width: 0%; /* Start at 0 */
+    background-color: #2ecc71;
+    border-radius: 4px;
+    transition: width 0.5s ease-in-out; /* Smooth transition */
+    text-align: center;
+    color: white;
+    line-height: 20px; /* Center text vertically */
+}
+
+.symbol-display {
+    margin: 15px 0;
+    text-align: center;
+}
+
+.symbol-code {
+    font-size: 4em; /* Make the symbol large */
+    color: #e74c3c;
+    display: block;
+}
+
+#collapse-symbol-type {
+    font-size: 0.9em;
+    color: #7f8c8d;
+    display: block;
+    margin-top: -10px; /* Adjust spacing */
+}
+
+ul {
+    padding-left: 20px;
+}
+
+li {
+    margin-bottom: 5px;
+}
