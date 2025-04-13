@@ -10,7 +10,7 @@ Resonator Core captures subtle timing variations in user input to generate an "e
 
 1.  **Compute EDM (Entropy Deviation Metric):** Measures the deviation from a baseline entropy level, indicating potential shifts in user attention or system state.
 2.  **Evolve a Wavefunction (Ψ):** Simulates a quantum-like state based on the current entropy characteristics.
-3.  **Collapse HQE (Hyperdimensional Quantum Encoding):** Probabilistically selects a symbolic representation (based on I Ching hexagrams, Tarot, Runes, Hebrew letters) from the evolved wavefunction, influenced by the entropy snapshot.
+3.  **Collapse HQE (Holographic Quantum Encoding):** Probabilistically selects a symbolic representation (based on I Ching hexagrams, Tarot, Runes, Hebrew letters) from the evolved wavefunction, influenced by the entropy snapshot.
 
 The library also provides a `SymbolicEventBus` for emitting events related to entropy generation, attention levels, and wavefunction collapse.
 
